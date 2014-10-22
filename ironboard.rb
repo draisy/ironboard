@@ -1,17 +1,12 @@
 require 'mechanize'
-require 'pry'
 require 'highline/import'
 class Ironboard
-  VALID_COMMANDS = ['labs', 'todo']
 
   def initialize
    @agent = Mechanize.new
    @page = @agent.get('http://learn.flatironschool.com')
    login(@page)
-   get_schedule
-   display_plan
-   display_labs
-   get_titles
+   display
    call
   end
 
@@ -48,6 +43,13 @@ class Ironboard
     @logged_in = login.submit login.button
   end
 
+  def display
+    get_schedule
+    display_plan
+    display_labs
+    get_titles
+  end
+
   def get_schedule
     @schedule = @logged_in.links_with(:href =>/daily-schedules/).last.click
     puts @schedule.search('div#daily-schedule h1').first.text 
@@ -59,13 +61,19 @@ class Ironboard
     @rows.each {|row| puts "#{row.text}"}
   end
 
-
   def display_labs
     @labs_title = @schedule.search('div#daily-schedule h1')[1]
     @labs_title = @schedule.search('div#daily-schedule h2').first if !@labs_title
     puts "\n******THE #{@labs_title.text.upcase}******"
     @labs_title.next_sibling.next.search('li a').each {|l| puts l.text}
     puts "*********************"
+  end
+
+  def get_titles
+    puts "\nLabs available for download"
+    @schedule.search('div#daily-schedule a').each_with_index do |title, index| 
+      puts "#{index+1}. #{title.text}"
+    end
   end
 
   def get_link(input)
@@ -77,14 +85,6 @@ class Ironboard
     github = lesson.links_with(:href => /github.com\/flatiron-school-ironboard/).first.href
     `open "#{github}"`
   end
-
-  def get_titles
-    puts "\nLabs available for download"
-    @schedule.search('div#daily-schedule a').each_with_index do |title, index| 
-      puts "#{index+1}. #{title.text}"
-    end
-  end
-
 end
 
 i = Ironboard.new
